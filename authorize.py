@@ -2,8 +2,7 @@
 copied/edited code to get a reddit oauth working
 '''
 
-import requests, json
-from requests.api import head
+import requests
 import private_info
 
 auth = requests.auth.HTTPBasicAuth(
@@ -35,19 +34,56 @@ TOKEN = res.json()['access_token']
 # add authorization to our headers dictionary
 headers = {**headers, **{'Authorization': f"bearer {TOKEN}"}}
 
-# while the token is valid (~2 hours) we just add headers=headers to our requests
-# test = requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
+params = {'limit':10}
 
-print (res.json())
-print (headers)
-# print(test.json())
+def fetchNewUpvoted(earliest_permalink):
+    postsPerBatch = 100
+    params = {'limit':postsPerBatch}
+    posturls = []
+    permalink_found = False
+    # polls reddit for a batch of 100 upvoted posts
+    # repeats polling for next 100 posts
+    # adds all new posts' urls to posturls
+    # if permalink found stops looping
+    while not permalink_found:
+        batch = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
+        # adds posts
+        # searchs for permalink match
+        for child in batch["data"]["children"]:
+            posturls.append(child["data"]["url"])
+            if earliest_permalink in child["data"]["permalink"]:
+                permalink_found = True
+                break
+        # updates parameters in requests to get next 100
+        params = {
+            **params, 
+            **{'after': f"t3_{batch['data']['children'][postsPerBatch - 1]['data']['id']}"}
+            }
+    return posturls
 
-# while the token is valid (~2 hours) we just add headers=headers to our requests
-test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers)
-test = test.json()
-# print (json.dumps(test))
-print (test.keys())
-print (test["kind"])
-print (test["data"].keys())
-for child in test["data"]["children"]:
-    print (child["data"]["url"])
+if __name__ == "__main__":
+    # while the token is valid (~2 hours) we just add headers=headers to our requests
+    # test = requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
+
+    print (res.json())
+    print (headers)
+    # print(test.json())
+
+    # while the token is valid (~2 hours) we just add headers=headers to our requests
+    test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params)
+    test = test.json()
+    # print (json.dumps(test))
+    print (test.keys())
+    print (test["kind"])
+    print (test["data"].keys())
+    print(test["data"]["children"][0]["data"].keys())
+    for child in test["data"]["children"]:
+        print (child["data"]["url"], child["data"]['permalink'], child["data"]['id'])
+    
+
+
+    params = {**params, **{'after': f"t3_{test['data']['children'][9]['data']['id']}"}}
+    print (params)
+    test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
+    for child in test["data"]["children"]:
+        print (child["data"]["url"], child["data"]['permalink'], child["data"]['id'])
