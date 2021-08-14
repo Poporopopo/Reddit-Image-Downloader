@@ -23,7 +23,8 @@ def downloadFromUrl(url):
         return url, filename
     # checking for reddit galleries
     elif "gallery" in url:
-        return 
+        url, filename = redditGalleryDownload(url)
+        return url, filename
     else:
         filename = url.split("/")[-1]
         generalDownload(url, filename)
