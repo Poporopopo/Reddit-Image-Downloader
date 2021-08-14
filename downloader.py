@@ -15,13 +15,13 @@ def verifyValidFileType(filename):
 # downloads and writes file
 def downloadFromUrl(url):
     if "wixmp" in url:
-        wixmpDownload(url)
+        return wixmpDownload(url)
     # checking for redgifs mp4s
     elif "redgifs" in url:
-        redgifDownload(url)
+        return redgifDownload(url)
     else:
         filename = url.split("/")[-1]
-        generalDownload(url, filename)
+        return generalDownload(url, filename)
 
 def generalDownload(url, filename):
     filepath = downloadfolder / filename
@@ -29,12 +29,13 @@ def generalDownload(url, filename):
     
     with filepath.open('wb') as f:
         f.write(download.content)
+    return filename
 
 def wixmpDownload(url):
     # removes token to get the filename
     filename = url.split("?token")[0].split("/")[-1]
     verifyValidFileType(filename)
-    generalDownload(url, filename)
+    return generalDownload(url, filename)
 
 def redgifDownload(url):
     # create lowercase video address
@@ -46,7 +47,7 @@ def redgifDownload(url):
     # retrieving original link
     url = req.text.split('"')[URLindex]
     filename = url.split("/")[-1]
-    generalDownload(url, filename)
+    return generalDownload(url, filename)
 
 if __name__ == "__main__":
     print("lul")
