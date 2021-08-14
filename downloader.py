@@ -1,9 +1,12 @@
 import pathlib, requests
 from datetime import date
 
+# create downloads folder with date of downloads
 parentpath = pathlib.Path(__file__).parent
 today = date.today().strftime("%Y-%m-%d")
 downloadfolder = parentpath / "Downloads" / today
+downloadfolder.mkdir(parents=True, exist_ok=True)
+
 def verifyValidFileType(filename):
     filetype = filename.split('.')[-1]
     if filetype not in ["jpg", "png", "jpeg", "gif", "mp4"]:
