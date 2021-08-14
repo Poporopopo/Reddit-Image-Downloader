@@ -4,6 +4,7 @@ copied/edited code to get a reddit oauth working
 
 import requests
 import private_info
+from downloader import redditGalleryDownload
 
 auth = requests.auth.HTTPBasicAuth(
     private_info.Client_ID,
@@ -69,10 +70,7 @@ if __name__ == "__main__":
     # while the token is valid (~2 hours) we just add headers=headers to our requests
     # test = requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
-    print (res.json())
-    print (headers)
-    # print(test.json())
-
+    '''
     # while the token is valid (~2 hours) we just add headers=headers to our requests
     test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params)
     test = test.json()
@@ -83,11 +81,34 @@ if __name__ == "__main__":
     print(test["data"]["children"][0]["data"].keys())
     for child in test["data"]["children"]:
         print (child["data"]["url"], child["data"]['permalink'], child["data"]['id'])
+    '''
     
-
-
-    params = {**params, **{'after': f"t3_{test['data']['children'][9]['data']['id']}"}}
-    print (params)
-    test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
-    for child in test["data"]["children"]:
-        print (child["data"]["url"], child["data"]['permalink'], child["data"]['id'])
+    postsPerBatch = 100
+    params = {'limit':postsPerBatch}
+    permalink_found = False
+    earliest_permalink = '/r/thighdeology/comments/omww18/fuck_the_wave_pool/'
+    # polls reddit for a batch of 100 upvoted posts
+    # repeats polling for next 100 posts
+    # adds all new posts' urls to posturls
+    # if permalink found stops looping
+    while not permalink_found:
+        batch = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
+        # adds posts
+        # searchs for permalink match
+        for child in batch["data"]["children"]:
+            if earliest_permalink in child["data"]["permalink"]:
+                print ("Earliest post has been found!")
+                print(child["data"].keys())
+                print(child["data"]["url"])
+                print(child["data"]["permalink"])
+                print(child["data"]["gallery_data"])
+                print(child["data"]["media_only"])
+                print(child["data"]["media"])
+                permalink_found = True
+                print(redditGalleryDownload(child["data"]["url"]))
+                break
+        # updates parameters in requests to get next 100
+        params = {
+            **params, 
+            **{'after': f"t3_{batch['data']['children'][postsPerBatch - 1]['data']['id']}"}
+            }

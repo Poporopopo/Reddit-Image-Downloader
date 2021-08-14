@@ -32,8 +32,8 @@ def run(link):
     print ("Beginning Downloading from links")
     for url in urls:
         try:
-            file = downloader.downloadFromUrl(url)
-            print(f"Successfully downloaded {file} from {url}")
+            url, filename = downloader.downloadFromUrl(url)
+            print(f"Successfully downloaded {filename} from {url}")
         except TypeError as e:
             print (f"Failed to download from {url}. A list has been generated")
             badlinks.append(url)
