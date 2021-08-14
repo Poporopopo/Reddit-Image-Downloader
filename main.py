@@ -7,6 +7,7 @@ If provided a link, it will use that as the earliest post and download from ther
 '''
 
 import authorize, downloader
+from time import sleep
 
 def verifyRedditLink(link):
     return 'reddit' in link
@@ -23,8 +24,12 @@ def stripLink(fullLink):
 # method to run and download
 # checks if link can be stripped to a permalink
 def run(link):
+    print("Beginning Polling from Reddit")
     urls = authorize.fetchNewUpvoted(link)
+    urls.reverse()
+    print("Polling complete!")
     badlinks = []
+    print ("Beginning Downloading from links")
     for url in urls:
         try:
             file = downloader.downloadFromUrl(url)

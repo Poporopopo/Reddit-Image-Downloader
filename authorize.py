@@ -41,17 +41,20 @@ def fetchNewUpvoted(earliest_permalink):
     params = {'limit':postsPerBatch}
     posturls = []
     permalink_found = False
+    batchNumber = 1
     # polls reddit for a batch of 100 upvoted posts
     # repeats polling for next 100 posts
     # adds all new posts' urls to posturls
     # if permalink found stops looping
     while not permalink_found:
+        print (f"Polling batch {batchNumber} of {postsPerBatch} from Reddit")
         batch = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
         # adds posts
         # searchs for permalink match
         for child in batch["data"]["children"]:
             posturls.append(child["data"]["url"])
             if earliest_permalink in child["data"]["permalink"]:
+                print ("Earliest post has been found!")
                 permalink_found = True
                 break
         # updates parameters in requests to get next 100
@@ -59,6 +62,7 @@ def fetchNewUpvoted(earliest_permalink):
             **params, 
             **{'after': f"t3_{batch['data']['children'][postsPerBatch - 1]['data']['id']}"}
             }
+        batchNumber = batchNumber + 1
     return posturls
 
 if __name__ == "__main__":
