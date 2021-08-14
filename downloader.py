@@ -1,6 +1,13 @@
 import pathlib, requests
+from datetime import date
 
 parentpath = pathlib.Path(__file__).parent
+today = date.today().strftime("%Y-%m-%d")
+downloadfolder = parentpath / "Downloads" / today
+def verifyValidFileType(filename):
+    filetype = filename.split('.')[-1]
+    if filetype not in ["jpg", "png", "jpeg", "gif", "mp4"]:
+        raise TypeError
 
 # downloads and writes file
 def downloadFromUrl(url):
@@ -14,7 +21,7 @@ def downloadFromUrl(url):
         generalDownload(url, filename)
 
 def generalDownload(url, filename):
-    filepath = parentpath / "test" / filename
+    filepath = downloadfolder / filename
     download = requests.get(url)
     
     with filepath.open('wb') as f:
@@ -38,11 +45,8 @@ def redgifDownload(url):
     filename = url.split("/")[-1]
     generalDownload(url, filename)
 
-def verifyValidFileType(filename):
-    filetype = filename.split('.')[-1]
-    if filetype not in ["jpg", "png", "jpeg", "gif", "mp4"]:
-        raise TypeError
-
 if __name__ == "__main__":
     print("lul")
-    
+    print(parentpath)
+    print(today)
+    print(downloadfolder)
