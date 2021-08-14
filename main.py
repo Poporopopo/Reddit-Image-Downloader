@@ -6,7 +6,7 @@ Checks upvoted posts with pics and downloads them
 If provided a link, it will use that as the earliest post and download from there to latest post.
 '''
 
-import authorize
+import authorize, downloader
 
 # takes a link and strips it to perma link format for reddit
 # used later in the search
@@ -24,6 +24,15 @@ def run(early_link):
     if early_link == "bwuh":
         return
     urls = authorize.fetchNewUpvoted(early_link)
+    badlinks = []
+    for url in urls:
+        try:
+            downloader.downloadFromUrl(url)
+        except TypeError as e:
+            badlinks.append(url)
+            print(e)
+    if len(badlinks) > 0:
+        print ("Errors from: ", str(badlinks))
 
 if __name__ == "__main__":
     # print (stripLink('https://www.reddit.com/r/IWantToBeHerHentai2/comments/p3uvlw/i_wanna_be_one_of_the_girls_so_bad/'))
