@@ -4,7 +4,6 @@ copied/edited code to get a reddit oauth working
 
 import requests
 import private_info
-from downloader import redditGalleryDownload
 
 auth = requests.auth.HTTPBasicAuth(
     private_info.Client_ID,
@@ -35,80 +34,76 @@ TOKEN = res.json()['access_token']
 # add authorization to our headers dictionary
 headers = {**headers, **{'Authorization': f"bearer {TOKEN}"}}
 
-params = {'limit':10}
-
-def fetchNewUpvoted(earliest_permalink):
-    postsPerBatch = 100
-    params = {'limit':postsPerBatch}
-    posturls = []
-    permalink_found = False
+def fetchNewUpvoted(numBatches = 10, postsPerBatch = 100) -> list:
+    params = {
+        'limit':postsPerBatch, 
+        "raw_json": 1}
+    batchedPollList = []
     batchNumber = 1
     # polls reddit for a batch of 100 upvoted posts
     # repeats polling for next 100 posts
     # adds all new posts' urls to posturls
     # if permalink found stops looping
-    while not permalink_found:
-        print (f"Polling batch {batchNumber} of {postsPerBatch} from Reddit")
+    for batchNumber in range(numBatches):
+        print (f"Polling {postsPerBatch} upvoted posts from Reddit with batch {batchNumber+1} of {numBatches} ")
         batch = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
         # adds posts
-        # searchs for permalink match
-        for child in batch["data"]["children"]:
-            posturls.append(child["data"]["url"])
-            if earliest_permalink in child["data"]["permalink"]:
-                print ("Earliest post has been found!")
-                permalink_found = True
-                break
+        batchedPollList.append(batch["data"]["children"])
         # updates parameters in requests to get next 100
         params = {
             **params, 
-            **{'after': f"t3_{batch['data']['children'][postsPerBatch - 1]['data']['id']}"}
+            **{'after': batch['data']['after']}
             }
-        batchNumber = batchNumber + 1
-    return posturls
+    return batchedPollList
+
+def getPostsToDownload(permalink="", numBatches = 10, batchSize = 100) -> list:
+    batchedList = fetchNewUpvoted(numBatches, batchSize)
+    postlist = [ 
+        RedditPost(
+            child["kind"],
+            child["data"]["id"],
+            child["data"]["url"],
+            child["data"]["permalink"]
+        ) 
+        for batch in batchedList for child in batch]
+    for i in range(len(postlist)):
+        if permalink == postlist[i].permalink:
+            postlist = postlist[:i]
+            break
+    return postlist
+    
+class RedditPost:
+    def __init__(self, kind, id, url, permalink) -> None:
+        self.typePrefix = kind
+        self.postid = id
+        self.url = url
+        self.permalink = permalink
+
+    def __str__(self):
+        return (f'['
+            f'{self.typePrefix},'
+            f'{self.postid},'
+            f'{self.url},'
+            f'{self.permalink}'
+            ']'
+        )
+
+    def makeLink(self):
+        return f"https://www.reddit.com/{self.permalink}"
 
 if __name__ == "__main__":
-    # while the token is valid (~2 hours) we just add headers=headers to our requests
-    # test = requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
-
     '''
-    # while the token is valid (~2 hours) we just add headers=headers to our requests
-    test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params)
+    test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/saved/', headers=headers, params=params)
     test = test.json()
-    # print (json.dumps(test))
-    print (test.keys())
-    print (test["kind"])
     print (test["data"].keys())
-    print(test["data"]["children"][0]["data"].keys())
-    for child in test["data"]["children"]:
-        print (child["data"]["url"], child["data"]['permalink'], child["data"]['id'])
+    print (test["data"]["after"])
+    print (len(test["data"]["children"]))
+    print (test["data"]["children"][0]["kind"])
+    print (test["data"]["children"][0]["data"].keys())
+    print (test["data"]["children"][0]["data"]["url"])
+    print (test["data"]["children"][0]["data"]["permalink"])
+    print (test["data"]["children"][0]["data"]["id"])
     '''
-    
-    postsPerBatch = 100
-    params = {'limit':postsPerBatch}
-    permalink_found = False
-    earliest_permalink = '/r/thighdeology/comments/omww18/fuck_the_wave_pool/'
-    # polls reddit for a batch of 100 upvoted posts
-    # repeats polling for next 100 posts
-    # adds all new posts' urls to posturls
-    # if permalink found stops looping
-    while not permalink_found:
-        batch = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
-        # adds posts
-        # searchs for permalink match
-        for child in batch["data"]["children"]:
-            if earliest_permalink in child["data"]["permalink"]:
-                print ("Earliest post has been found!")
-                print(child["data"].keys())
-                print(child["data"]["url"])
-                print(child["data"]["permalink"])
-                print(child["data"]["gallery_data"])
-                print(child["data"]["media_only"])
-                print(child["data"]["media"])
-                permalink_found = True
-                print(redditGalleryDownload(child["data"]["url"]))
-                break
-        # updates parameters in requests to get next 100
-        params = {
-            **params, 
-            **{'after': f"t3_{batch['data']['children'][postsPerBatch - 1]['data']['id']}"}
-            }
+    test = getPostsToDownload(numBatches=1,batchSize=10)
+    for post in test:
+        print (post)
