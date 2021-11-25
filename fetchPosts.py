@@ -97,7 +97,7 @@ def convertRaw(permalink, rawPosts) -> list:
     
 def getPosts():
     target = defineTarget()
-    posts = fetchRawPosts(numBatches=1, postsPerBatch=100)
+    posts = fetchRawPosts()
     posts = convertRaw(target, posts)
     return posts
 
