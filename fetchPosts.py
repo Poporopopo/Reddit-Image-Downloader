@@ -1,9 +1,4 @@
-'''
-copied/edited code to get a reddit oauth working
-'''
-
-import requests
-import private_info
+import requests, private_info
 
 auth = requests.auth.HTTPBasicAuth(
     private_info.Client_ID,
@@ -34,18 +29,43 @@ TOKEN = res.json()['access_token']
 # add authorization to our headers dictionary
 headers = {**headers, **{'Authorization': f"bearer {TOKEN}"}}
 
-def fetchNewUpvoted(numBatches = 10, postsPerBatch = 100) -> list:
+def message(function, premessage):
+    print (f"fetchPosts.py - {function}: {premessage}")
+
+def validRedditLink(link) -> bool:
+    return 'reddit' in link
+
+# takes a link and strips it to perma link format for reddit
+# used later in the search
+def stripLink(fullLink) -> str:
+    fullLink = fullLink.split('?utm')[0].split('/r/')[-1]
+    return f'/r/{fullLink}'
+
+def defineTarget() -> str:
+    startFromLink = ""
+    while startFromLink != "Y" and startFromLink != "N":
+        link = ""
+        message("defineTarget()", "Would you like to start from a reddit link? (y/n)")
+        startFromLink = input().upper()
+        
+        if startFromLink == "Y":
+            message("defineTarget()", "After which post do you want to scrape from?:")
+            link = input()
+            if validRedditLink(link):
+                link = stripLink(link)
+            else:
+                message("defineTarget()", "That is not a valid reddit link.")
+                startFromLink = ""
+    return link
+
+def fetchRawPosts(numBatches = 10, postsPerBatch = 100) -> list:
     params = {
         'limit':postsPerBatch, 
         "raw_json": 1}
     batchedPollList = []
-    batchNumber = 1
-    # polls reddit for a batch of 100 upvoted posts
-    # repeats polling for next 100 posts
-    # adds all new posts' urls to posturls
-    # if permalink found stops looping
+    
     for batchNumber in range(numBatches):
-        print (f"Polling {postsPerBatch} upvoted posts from Reddit with batch {batchNumber+1} of {numBatches} ")
+        message("fetchRawPosts()", f"Polling {postsPerBatch} upvoted posts from Reddit with batch {batchNumber+1} of {numBatches}")
         batch = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/upvoted/', headers=headers, params=params).json()
         # adds posts
         batchedPollList.append(batch["data"]["children"])
@@ -54,10 +74,11 @@ def fetchNewUpvoted(numBatches = 10, postsPerBatch = 100) -> list:
             **params, 
             **{'after': batch['data']['after']}
             }
+    message("fetchRawPosts()", "Completed polling upvoted posts")
     return batchedPollList
 
-def getPostsToDownload(permalink="", numBatches = 10, batchSize = 100) -> list:
-    batchedList = fetchNewUpvoted(numBatches, batchSize)
+def convertRaw(permalink, rawPosts) -> list:
+    message("convertRaw()", "Converting raw posts to RedditPost Objects")
     postlist = [ 
         RedditPost(
             child["kind"],
@@ -65,13 +86,21 @@ def getPostsToDownload(permalink="", numBatches = 10, batchSize = 100) -> list:
             child["data"]["url"],
             child["data"]["permalink"]
         ) 
-        for batch in batchedList for child in batch]
+        for batch in rawPosts for child in batch]
     for i in range(len(postlist)):
         if permalink == postlist[i].permalink:
+            print (message(f"Found target: {postlist[i].fullLink()}. Trimming list"))
             postlist = postlist[:i]
             break
+    message("convertRaw()", f"RedditPost conversion completed. {len(postlist)} posts converted.")
     return postlist
     
+def getPosts():
+    target = defineTarget()
+    posts = fetchRawPosts(numBatches=1, postsPerBatch=100)
+    posts = convertRaw(target, posts)
+    return posts
+
 class RedditPost:
     def __init__(self, kind, id, url, permalink) -> None:
         self.typePrefix = kind
@@ -84,12 +113,12 @@ class RedditPost:
             f'{self.typePrefix},'
             f'{self.postid},'
             f'{self.url},'
-            f'{self.permalink}'
+            f'{self.fullLink()}'
             ']'
         )
 
-    def makeLink(self):
-        return f"https://www.reddit.com/{self.permalink}"
+    def fullLink(self):
+        return f"https://www.reddit.com{self.permalink}"
 
 if __name__ == "__main__":
     '''
@@ -103,7 +132,10 @@ if __name__ == "__main__":
     print (test["data"]["children"][0]["data"]["url"])
     print (test["data"]["children"][0]["data"]["permalink"])
     print (test["data"]["children"][0]["data"]["id"])
-    '''
-    test = getPostsToDownload(numBatches=1,batchSize=10)
+    
+    test = getPosts()
     for post in test:
         print (post)
+    '''
+    html = requests.get('https://www.reddit.com/gallery/r1ggqh')
+    print(html)
