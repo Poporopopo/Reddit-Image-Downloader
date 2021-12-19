@@ -7,7 +7,7 @@ If provided a link, it will use that as the earliest post and download from ther
 '''
 
 from requests.exceptions import RequestException
-from fetchPosts import getPosts
+from fetchPosts import getPosts, storeLastDownload
 from downloadmanager import manager
 
 def message(premessage) -> None:
@@ -17,11 +17,11 @@ def main() -> None:
     message("Gathering posts")
     posts = getPosts()
 
-    message("Creating Downloaders")
     mng = manager(posts)
-    message("Running Downloaders")
     mng.download()
     mng.findFails()
+    if len(posts) > 0:
+        storeLastDownload(posts[-1])
     
 if __name__ == "__main__":
     main()

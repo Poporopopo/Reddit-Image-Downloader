@@ -1,4 +1,5 @@
-import requests, private_info
+import requests, private_info, json
+from requests.api import post
 
 auth = requests.auth.HTTPBasicAuth(
     private_info.Client_ID,
@@ -56,7 +57,15 @@ def defineTarget() -> str:
             else:
                 message("defineTarget()", "That is not a valid reddit link.")
                 startFromLink = ""
+    if link == "": 
+        link = stripLink(lastDownload())
+    message("defineTarget()", f"Target is {link}")
     return link
+
+def lastDownload() -> str:
+    with open("data.json") as file:
+        data = json.load(file)
+    return data["Last Post"]
 
 def fetchRawPosts(numBatches = 10, postsPerBatch = 100) -> list:
     params = {
@@ -86,10 +95,13 @@ def convertRaw(permalink, rawPosts) -> list:
             child["data"]["url"],
             child["data"]["permalink"]
         ) 
-        for batch in rawPosts for child in batch]
+        for batch in rawPosts 
+        for child in batch
+        if child["data"]["url"] != None
+        ]
     for i in range(len(postlist)):
         if permalink == postlist[i].permalink:
-            print (message(f"Found target: {postlist[i].fullLink()}. Trimming list"))
+            message("convertRaw()", f"Found target: {postlist[i].fullLink()}. Trimming list")
             postlist = postlist[:i]
             break
     message("convertRaw()", f"RedditPost conversion completed. {len(postlist)} posts converted.")
@@ -99,7 +111,16 @@ def getPosts():
     target = defineTarget()
     posts = fetchRawPosts()
     posts = convertRaw(target, posts)
+    posts.reverse()
     return posts
+
+def storeLastDownload(post) -> None:
+    dumper = {
+        "Last Post": post.fullLink()
+    }
+    with open("data.json", "w") as file:
+        json.dump(dumper, file, indent=6)   
+    return
 
 class RedditPost:
     def __init__(self, kind, id, url, permalink) -> None:
@@ -119,23 +140,3 @@ class RedditPost:
 
     def fullLink(self):
         return f"https://www.reddit.com{self.permalink}"
-
-if __name__ == "__main__":
-    '''
-    test = requests.get(f'https://oauth.reddit.com/user/{private_info.Username}/saved/', headers=headers, params=params)
-    test = test.json()
-    print (test["data"].keys())
-    print (test["data"]["after"])
-    print (len(test["data"]["children"]))
-    print (test["data"]["children"][0]["kind"])
-    print (test["data"]["children"][0]["data"].keys())
-    print (test["data"]["children"][0]["data"]["url"])
-    print (test["data"]["children"][0]["data"]["permalink"])
-    print (test["data"]["children"][0]["data"]["id"])
-    
-    test = getPosts()
-    for post in test:
-        print (post)
-    '''
-    html = requests.get('https://www.reddit.com/gallery/r1ggqh')
-    print(html)

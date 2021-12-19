@@ -42,5 +42,5 @@ class manager:
         """Finds all messages with failures for debugging"""
         self.message("findFails()", "Scanning console messages for fails")
         for message in self.messages:
-            if "fail" in message:
+            if "fail" in message.lower():
                 print (message)

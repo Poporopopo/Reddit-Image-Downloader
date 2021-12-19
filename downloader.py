@@ -50,9 +50,9 @@ class GeneralDownloader (AbstractDownloader):
         """
         return string.replace("&amp;", "&")
 
-    def successmessage(self):
+    def successmessage(self, filename):
         """Message for when a file is successfully downloaded"""
-        return f"downloader.py - {self.downloadertype}: Successfully downloaded from {self.post.fullLink()}."
+        return f"downloader.py - {self.downloadertype}: Successfully downloaded {filename} from {self.post.fullLink()}."
 
     def failmessage(self, reason):
         """Message for when a file can't be downloaded. Formats the reason given."""
@@ -85,7 +85,7 @@ class GeneralDownloader (AbstractDownloader):
         download = requests.get(url)
         with filepath.open('wb') as f:
             f.write(download.content)
-        return self.successmessage()
+        return self.successmessage(filename)
 
 class RedGifDownloader (GeneralDownloader):
     
@@ -109,6 +109,7 @@ class RedGifDownloader (GeneralDownloader):
         URLindex = req.text.lower().split('"').index(lowerOGVid)
         # retrieving original link
         url = req.text.split('"')[URLindex]
+        return url
         
 class redditGalleryDownloader(GeneralDownloader):
     
@@ -119,12 +120,12 @@ class redditGalleryDownloader(GeneralDownloader):
     def download(self) -> str:
         resp = self.repeatRequest(10)
         imageLinks = self.findURLs(resp.text)
-        outputmessage = f"Downloading from reddit gallery: {self.post.fullLink()}:\n"
+        outputmessage = f"Downloading from reddit gallery: {self.post.fullLink()}:"
         for imageLink in imageLinks:
             url = imageLink
             filename = self.extractFileName(url)
             DLpath = self.DLpath
-            outputmessage += f"\t{self.genericDownloader(url, filename, DLpath)}\n"
+            outputmessage += f"\n\t{self.genericDownloader(url, filename, DLpath)}"
         return outputmessage
 
     def repeatRequest(self, timeSleep) -> requests.Response:
