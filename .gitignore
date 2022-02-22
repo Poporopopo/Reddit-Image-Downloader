@@ -130,3 +130,5 @@ dmypy.json
 
 private_info.py
 Downloads/*
+data.json
+redditVenv/*

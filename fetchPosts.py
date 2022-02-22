@@ -44,6 +44,8 @@ def stripLink(fullLink) -> str:
 
 def defineTarget() -> str:
     startFromLink = ""
+    link = startFromLink
+    '''
     while startFromLink != "Y" and startFromLink != "N":
         link = ""
         message("defineTarget()", "Would you like to start from a reddit link? (y/n)")
@@ -57,6 +59,7 @@ def defineTarget() -> str:
             else:
                 message("defineTarget()", "That is not a valid reddit link.")
                 startFromLink = ""
+    '''
     if link == "": 
         link = stripLink(lastDownload())
     message("defineTarget()", f"Target is {link}")
